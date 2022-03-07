@@ -7,4 +7,4 @@ auth = HTTPTokenAuth()
 def verify(api_key: str):
     user = UserModel.query.filter(UserModel.api_key == api_key).first()
 
-    return user 
+    return user

@@ -3,12 +3,12 @@ from app.models.user_model import UserModel
 from secrets import token_urlsafe
 from sqlalchemy.exc import IntegrityError
 from app.configs.auth import auth
-from werkzeug.exceptions import Unauthorized
+import email
+from flask_jwt_extended import create_access_token, jwt_required, decode_token
 
 def create_user():
     try: 
         user_data = request.get_json()
-        user_data["api_key"] = token_urlsafe(16)
 
         new_user = UserModel(**user_data)
 
@@ -32,27 +32,29 @@ def signin():
         return jsonify({"msg": "email not registered"}), 404
 
     if found_user.check_password(user_data["password"]):
-        return jsonify({"api_key": found_user.api_key}), 200
-
+        token = create_access_token(found_user)
+        return jsonify({"access_token": token}), 200
+    
     return jsonify({"msg": "user not found"}), 404
 
-@auth.login_required()
+@jwt_required()
 def get_user():
-    api_key = request.headers["Authorization"].split()[1]
-    user = UserModel.query.filter_by(api_key = api_key).first()
+    token = request.headers["Authorization"].split()[1]
+    user = decode_token(token)["sub"]
 
     return jsonify({
-        "name": user.name,
-        "last_name": user.last_name,
-        "email": user.email
+        "name": user["name"],
+        "last_name": user["last_name"],
+        "email": user["email"]
     }), 200
 
-@auth.login_required()
+@jwt_required()
 def update_user():
     data = request.get_json()
-    api_key = request.headers["Authorization"].split()[1]
+    token = request.headers["Authorization"].split()[1]
+    email = decode_token(token)["sub"]["email"]
 
-    user = UserModel.query.filter_by(api_key = api_key).first()
+    user = UserModel.query.filter_by(email = email).first()
 
     for key, value in data.items():
         setattr(user, key, value)
@@ -66,13 +68,13 @@ def update_user():
         "email": user.email
     }), 200
 
-@auth.login_required()
+@jwt_required()
 def delete_user():
-    api_key = request.headers["Authorization"].split()[1]
-
-    user = UserModel.query.filter_by(api_key = api_key).first()
+    token = request.headers["Authorization"].split()[1]
+    email = decode_token(token)["sub"]["email"]
+    user = UserModel.query.filter_by(email = email).first()
 
     current_app.db.session.delete(user)
     current_app.db.session.commit()
 
-    return jsonify({"msg": f"User {user.name} has been deleted"}), 200 
+    return jsonify({"msg": f"User {user.name} has been deleted"}), 200

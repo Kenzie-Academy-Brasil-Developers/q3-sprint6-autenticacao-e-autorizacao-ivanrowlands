@@ -1,7 +1,7 @@
 from flask import Flask 
 from environs import Env
 
-from app.configs import database, migration
+from app.configs import database, migration, jwt_auth
 from app import routes
 
 env = Env()
@@ -16,7 +16,8 @@ def create_app():
 
     database.init_app(app)
     migration.init_app(app)
-
+    
+    jwt_auth.init_app(app)
     routes.init_app(app)
 
-    return app 
+    return app
