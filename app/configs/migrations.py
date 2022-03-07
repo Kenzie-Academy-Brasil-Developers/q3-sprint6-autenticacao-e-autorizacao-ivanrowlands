@@ -1,10 +1,6 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
+from flask_migrate import Migrate
 
 def init_app(app: Flask):
-    db.init_app(app)
-    app.db = db
-
+    Migrate(app, app.db)
     from app.models.user_model import UserModel 
